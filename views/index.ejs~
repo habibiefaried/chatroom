@@ -1,0 +1,187 @@
+<html>
+<head>
+	<title>chat IRC dengan express</title>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="/javascripts/jquery-1.8.3.js"></script>
+	<script src="/javascripts/bootstrap.js"></script>
+
+	<link href="/stylesheets/bootstrap.css" type="text/css" rel="stylesheet" />
+	<script>
+	$(document).ready(function()
+	{
+		$("#chat").hide();
+		$("#initCreator").hide();
+		$("#initJoiner").hide();
+
+		socket = io.connect();
+
+		$(".btnCreator").click(function() //tombol pada halaman utama
+		{
+			var name = $("#user").val();
+			socket.emit('register',{nama:name});
+
+			socket.on('registerReply',function(msg)
+			{
+				if (msg.message != 0) //jika berhasil
+				{
+					alert(msg.message);
+					$("#initCreator").show();	
+					$("#welcome").hide();
+				}
+				else //jika gagal
+				{
+					alert("Nama sudah ada yang pakai");
+				}
+			});
+		});
+
+		$(".btnJoiner").click(function()
+		{
+			var name = $("#user").val();
+			socket.emit('register',{nama:name});
+	
+			socket.on('registerReply',function(msg)
+			{
+				if (msg.message != 0) //jika berhasil
+				{
+					alert(msg.message);
+					$("#initJoiner").show();	
+					$("#welcome").hide();
+				}
+				else //jika gagal
+				{
+					alert("Nama sudah ada yang pakai");
+				}
+			});	
+		});
+
+		$(".btnRoom").click(function()
+		{
+			var NamaRoom = $("#roomName").val();
+			socket.emit('createRoom',{room:NamaRoom});
+			
+			socket.on('createReply',function(msg)
+			{
+				if (msg.message != 0)
+				{
+					alert(msg.message);
+					$("#initCreator").hide();
+					$("#chat").show();
+					$("#RoomChannel").val(NamaRoom); //room
+					$("#NamaChat").val($("#user").val()); //nama dia
+				}
+				else
+				{
+					alert("Nama room sudah ada");
+				}
+			});
+		});
+
+		socket.on("ListUser",function(msg)
+		{
+			var str = "";
+			var key;
+
+			for (key in msg.msg)
+			{
+				str = str + "<option> "+key+" </option>";
+			}
+			$("#ListUser").html(str);
+		});
+
+		socket.on("ListRoom",function(msg)
+		{
+			var str = "";
+			var key;
+			
+			if (msg.baru != undefined)
+				$("#status").html("<p><b> Room "+msg.baru+"</b> baru saja dibuat");
+
+			for (key in msg.msg)
+			{
+				str = str + "<option value='"+key+"'> "+key+"</option>";
+			}
+			$(".room").html(str);
+		});
+
+		$(".btnJoinRoom").click(function()
+		{
+			var room = $(".room").val();
+			socket.emit('joinRoom',{nama:room});
+			socket.on("joinRoomReply",function(msg)
+			{
+				if (msg.msg != 0)
+				{
+					alert(msg.msg);
+					$("#initJoiner").hide();
+					$("#RoomChannel").val(room); //room
+					$("#NamaChat").val($("#user").val()); //nama dia
+					$("#chat").show();
+				}
+				else
+				{
+					alert("Room sudah penuh, cari lagi yang lain");
+				}
+			});	
+		});
+
+		$(".btnChat").click(function()
+		{
+			var isi = $("#Chat").val();
+			socket.emit("msgChat",{msg:isi});
+			$("#Chat").val('');	
+		});
+
+		socket.on("chat",function(msg)
+		{
+			$('#lines').prepend($('<blockquote>',{text:msg.chat}).append($('<small>',{text:'By '+msg.name})));
+		});
+	
+	});
+
+	</script>
+</head>
+<body>
+	<div class="container">
+	
+		<div id="welcome">
+			<h1>Selamat datang!</h1>
+			<p>Please enter your name first:</p>
+			<input type="text" id="user" placeholder="Nama anda"/><br>
+			<button class="btnCreator">Creator</button><br> <button class="btnJoiner">Joiner</button>
+		</div>
+
+		<div id="initCreator">
+			<p>Masukkan nama room anda (semua karakter diperbolehkan) </p>
+			<input type="text" id="roomName"><br>
+			<button class="btnRoom">Create</button>
+		</div>
+		
+		<div id="initJoiner">
+			<p>Pilih room yang diinginkan </p>
+			<div id="status"></div>
+			<select name="room" class="room">
+			
+			</select><br>
+			<button class="btnJoinRoom">Join</button>
+		</div>
+
+		<div id="chat">
+			<h1>Chat System</h1>
+			Room : <input type="text" id="RoomChannel" disabled><br>
+			Nama anda : <input type="text" id="NamaChat" disabled>
+
+				<textarea class="input-block-level" id="Chat"></textarea>
+				<button class="btnChat">Send</button>
+
+			<div id="lines" class="well"></div>
+			
+			User online :<br>
+			<select id="ListUser" multiple disabled>
+			</select>
+		</div>
+
+	</div>
+</body>
+</html>
